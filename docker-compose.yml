@@ -1,0 +1,47 @@
+version: '3'
+services:
+  mediawiki:
+    build: .
+    image: mediawiki:latest
+    container_name: mediawiki_wiki
+    restart: always
+    ports:
+      - 8024:80
+    links:
+      - database
+      - parsoid
+    volumes:
+      - wiki_data:/var/www/html/images
+      # After initial setup, download LocalSettings.php to the same directory as
+      # this yaml and uncomment the following line and use compose to restart
+      # the mediawiki service
+      - ./LocalSettings.php:/var/www/html/LocalSettings.php
+      - ./VisualEditor:/var/www/html/extensions/VisualEditor
+      - ./Math:/var/www/html/extensions/Math
+    depends_on:
+      - "database"
+      - "parsoid"
+  database:
+    image: mariadb:latest
+    restart: always
+    environment:
+      # @see https://phabricator.wikimedia.org/source/mediawiki/browse/master/includes/DefaultSettings.php
+      MYSQL_DATABASE: my_wiki
+      MYSQL_USER: pscn
+      MYSQL_PASSWORD: example1
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    ports:
+      - 4675:3306
+    volumes:
+       - mysql_data:/var/lib/mysql
+  parsoid:
+    image: thenets/parsoid:0.11
+    ports:
+      - 8035:8000
+    restart: always
+    environment:
+      PARSOID_DOMAIN_localhost: http://mediawiki:80/api.php
+
+volumes:
+  mysql_data:
+  wiki_data:
